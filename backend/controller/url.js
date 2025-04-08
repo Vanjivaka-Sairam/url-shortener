@@ -138,6 +138,46 @@ async function handleRedirect(req, res) {
     }
 }
 
+async function handleDeleteUrl(req, res) {
+    try {
+        const shortId = req.params.shortId;
+        const result = await URL.findOneAndDelete({ shortID: shortId });
+        
+        if (!result) {
+            return res.status(404).json({ error: "URL not found" });
+        }
+        
+        return res.json({ message: "URL deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting URL:", error);
+        return res.status(500).json({ error: "Failed to delete URL" });
+    }
+}
+
+async function handleToggleUrlStatus(req, res) {
+    try {
+        const shortId = req.params.shortId;
+        const url = await URL.findOne({ shortID: shortId });
+        
+        if (!url) {
+            return res.status(404).json({ error: "URL not found" });
+        }
+        
+        // Toggle the isActive status
+        url.isActive = !url.isActive;
+        await url.save();
+        
+        return res.json({ 
+            id: url.shortID,
+            isActive: url.isActive,
+            message: `URL ${url.isActive ? 'activated' : 'deactivated'} successfully` 
+        });
+    } catch (error) {
+        console.error("Error toggling URL status:", error);
+        return res.status(500).json({ error: "Failed to toggle URL status" });
+    }
+}
+
 // Helper functions for analytics
 function getDeviceStats(visits) {
     const stats = {};
@@ -179,5 +219,7 @@ export {
     handleCreateShortUrl, 
     handleGetAnalytics, 
     handleGetUrls,
-    handleRedirect 
+    handleRedirect,
+    handleDeleteUrl,
+    handleToggleUrlStatus 
 };

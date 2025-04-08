@@ -3,6 +3,7 @@ import urlRoute from "./routes/url.js";
 import connectToMongoDB from "./connect.js";
 import URL from "./models/url.js";
 import cors from "cors";
+import { handleRedirect } from "./controller/url.js";
 
 const app = express();
 const port = 3000;
@@ -39,25 +40,8 @@ app.get("/api/analytics/:shortId", async (req, res) => {
   }
 });
 
-app.get("/:shortId", async (req, res) => {
-  try {
-    const shortId = req.params.shortId;
-    const url = await URL.findOneAndUpdate(
-      { shortID: shortId }, 
-      { $push: { visithistory: { timestamp: Date.now() } } },
-      { new: true }
-    );
-    
-    if (!url) {
-      return res.status(404).json({ error: "URL not found" });
-    }
-    
-    res.redirect(url.redirectURL);
-  } catch (error) {
-    console.error("Error redirecting:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-});
+// Use the controller's handleRedirect function
+app.get("/:shortId", handleRedirect);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

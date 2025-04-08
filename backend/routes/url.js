@@ -1,11 +1,13 @@
 import express from "express";
-import { handleCreateShortUrl, handleGetAnalytics, handleGetUrls } from "../controller/url.js";
+import { handleCreateShortUrl, handleGetAnalytics, handleGetUrls, handleDeleteUrl, handleToggleUrlStatus } from "../controller/url.js";
 
 const router = express.Router();
 
-router.post("/shorten", handleCreateShortUrl);
+router.post("/url", handleCreateShortUrl);
 router.get("/urls", handleGetUrls);
 router.get("/analytics/:shortId", handleGetAnalytics);
+router.delete("/url/:shortId", handleDeleteUrl);
+router.patch("/url/:shortId/toggle", handleToggleUrlStatus);
 
 export default router;
 

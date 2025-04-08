@@ -55,6 +55,68 @@ function Dashboard() {
     navigator.clipboard.writeText(url);
   };
 
+  const handleDelete = async (e, shortId) => {
+    e.stopPropagation(); // Prevent row selection when clicking delete
+    
+    if (!window.confirm('Are you sure you want to delete this URL?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/url/${shortId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to delete URL');
+      }
+
+      // Remove the deleted URL from state
+      setUrls(urls.filter(url => url.id !== shortId));
+      if (selectedUrl?.id === shortId) {
+        setSelectedUrl(null);
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleToggleStatus = async (e, shortId, currentStatus) => {
+    e.stopPropagation(); // Prevent row selection when clicking toggle
+    
+    const action = currentStatus ? 'deactivate' : 'activate';
+    if (!window.confirm(`Are you sure you want to ${action} this URL?`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/url/${shortId}/toggle`, {
+        method: 'PATCH',
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || `Failed to ${action} URL`);
+      }
+
+      // Update the URL status in state
+      setUrls(urls.map(url => {
+        if (url.id === shortId) {
+          return { ...url, isActive: !url.isActive };
+        }
+        return url;
+      }));
+
+      // Update selected URL if it's the one being toggled
+      if (selectedUrl?.id === shortId) {
+        setSelectedUrl(prev => ({ ...prev, isActive: !prev.isActive }));
+      }
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const getStatusBadge = (isActive, expiresAt) => {
     if (!isActive) {
       return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Expired</span>;
@@ -67,15 +129,23 @@ function Dashboard() {
 
   const prepareClicksOverTimeData = (clicksOverTime) => {
     const dates = Object.keys(clicksOverTime).sort();
+    const today = new Date();
+    const last7Days = [...Array(7)].map((_, i) => {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      return date.toISOString().split('T')[0];
+    }).reverse();
+
     return {
-      labels: dates,
+      labels: last7Days,
       datasets: [
         {
           label: 'Clicks',
-          data: dates.map(date => clicksOverTime[date]),
+          data: last7Days.map(date => clicksOverTime[date] || 0),
           borderColor: 'rgb(99, 102, 241)',
           backgroundColor: 'rgba(99, 102, 241, 0.5)',
-          tension: 0.1
+          tension: 0.1,
+          fill: true
         }
       ]
     };
@@ -89,10 +159,11 @@ function Dashboard() {
           label: 'Devices',
           data: Object.values(deviceStats),
           backgroundColor: [
-            'rgba(99, 102, 241, 0.5)',
-            'rgba(59, 130, 246, 0.5)',
-            'rgba(16, 185, 129, 0.5)'
-          ]
+            'rgba(99, 102, 241, 0.7)',
+            'rgba(59, 130, 246, 0.7)',
+            'rgba(16, 185, 129, 0.7)'
+          ],
+          borderWidth: 1
         }
       ]
     };
@@ -184,7 +255,7 @@ function Dashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(url.isActive, url.expiresAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -193,6 +264,22 @@ function Dashboard() {
                         className="text-indigo-600 hover:text-indigo-900"
                       >
                         Copy
+                      </button>
+                      <button
+                        onClick={(e) => handleToggleStatus(e, url.id, url.isActive)}
+                        className={`${
+                          url.isActive 
+                            ? 'text-yellow-600 hover:text-yellow-900' 
+                            : 'text-green-600 hover:text-green-900'
+                        }`}
+                      >
+                        {url.isActive ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(e, url.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        Delete
                       </button>
                     </td>
                   </tr>
@@ -218,7 +305,19 @@ function Dashboard() {
                         legend: {
                           position: 'top',
                         },
+                        title: {
+                          display: true,
+                          text: 'Last 7 Days'
+                        }
                       },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            stepSize: 1
+                          }
+                        }
+                      }
                     }}
                   />
                 </div>
@@ -232,9 +331,17 @@ function Dashboard() {
                       responsive: true,
                       plugins: {
                         legend: {
-                          position: 'top',
-                        },
+                          display: false
+                        }
                       },
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            stepSize: 1
+                          }
+                        }
+                      }
                     }}
                   />
                 </div>
@@ -245,9 +352,10 @@ function Dashboard() {
                 <h3 className="text-lg font-medium mb-4">Browser Distribution</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Object.entries(selectedUrl.browserStats).map(([browser, count]) => (
-                    <div key={browser} className="bg-gray-50 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600">{browser}</div>
-                      <div className="text-2xl font-semibold">{count}</div>
+                    <div key={browser} className="bg-gray-50 p-4 rounded-lg text-center">
+                      <div className="text-sm font-medium text-gray-600 mb-1">{browser}</div>
+                      <div className="text-3xl font-bold text-indigo-600">{count}</div>
+                      <div className="text-xs text-gray-500 mt-1">visits</div>
                     </div>
                   ))}
                 </div>
