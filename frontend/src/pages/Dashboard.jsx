@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
+import { QRCodeSVG } from 'qrcode.react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,6 +30,8 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedUrl, setSelectedUrl] = useState(null);
+  const [showQRModal, setShowQRModal] = useState(false);
+  const [qrUrl, setQrUrl] = useState('');
 
   useEffect(() => {
     fetchUrls();
@@ -53,6 +56,27 @@ function Dashboard() {
 
   const copyToClipboard = (url) => {
     navigator.clipboard.writeText(url);
+  };
+
+  const handleShowQR = (e, url) => {
+    e.stopPropagation();
+    setQrUrl(url);
+    setShowQRModal(true);
+  };
+
+  const downloadQRCode = () => {
+    const canvas = document.getElementById('qr-code-canvas');
+    if (canvas) {
+      const pngUrl = canvas
+        .toDataURL('image/png')
+        .replace('image/png', 'image/octet-stream');
+      const downloadLink = document.createElement('a');
+      downloadLink.href = pngUrl;
+      downloadLink.download = 'qr-code.png';
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
   };
 
   const handleDelete = async (e, shortId) => {
@@ -255,32 +279,40 @@ function Dashboard() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(url.isActive, url.expiresAt)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          copyToClipboard(url.shortUrl);
-                        }}
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        Copy
-                      </button>
-                      <button
-                        onClick={(e) => handleToggleStatus(e, url.id, url.isActive)}
-                        className={`${
-                          url.isActive 
-                            ? 'text-yellow-600 hover:text-yellow-900' 
-                            : 'text-green-600 hover:text-green-900'
-                        }`}
-                      >
-                        {url.isActive ? 'Deactivate' : 'Activate'}
-                      </button>
-                      <button
-                        onClick={(e) => handleDelete(e, url.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Delete
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-4">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(url.shortUrl);
+                          }}
+                          className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                        >
+                          Copy
+                        </button>
+                        <button
+                          onClick={(e) => handleShowQR(e, url.shortUrl)}
+                          className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+                        >
+                          QR Code
+                        </button>
+                        <button
+                          onClick={(e) => handleToggleStatus(e, url.id, url.isActive)}
+                          className={`${
+                            url.isActive 
+                              ? 'text-yellow-600 hover:text-yellow-900' 
+                              : 'text-green-600 hover:text-green-900'
+                          } text-sm font-medium`}
+                        >
+                          {url.isActive ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={(e) => handleDelete(e, url.id)}
+                          className="text-red-600 hover:text-red-900 text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -358,6 +390,40 @@ function Dashboard() {
                       <div className="text-xs text-gray-500 mt-1">visits</div>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* QR Code Modal */}
+          {showQRModal && (
+            <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+              <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div className="flex flex-col items-center">
+                  <h3 className="text-lg font-medium mb-4">QR Code for Short URL</h3>
+                  <div className="bg-white p-4 rounded-lg shadow-inner">
+                    <QRCodeSVG
+                      id="qr-code-canvas"
+                      value={qrUrl}
+                      size={256}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                  <div className="mt-4 space-x-3">
+                    <button
+                      onClick={downloadQRCode}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                    >
+                      Download QR Code
+                    </button>
+                    <button
+                      onClick={() => setShowQRModal(false)}
+                      className="bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

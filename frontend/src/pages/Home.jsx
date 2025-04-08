@@ -12,7 +12,7 @@ function Home() {
     setError('');
     
     try {
-      const response = await fetch('http://localhost:3000/api/shorten', {
+      const response = await fetch('http://localhost:3000/api/url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ function Home() {
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to shorten URL');
+        throw new Error(data.error || 'Failed to shorten URL');
       }
       
       setShortUrl(data.shortUrl);
