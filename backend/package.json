@@ -10,10 +10,13 @@
     "start": "nodemon index.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.18.2",
+    "geoip-lite": "^1.4.10",
     "mongoose": "^8.13.2",
     "nanoid": "^5.1.5",
     "nodemon": "^3.1.9",
-    "shortid": "^2.2.17"
+    "shortid": "^2.2.17",
+    "ua-parser-js": "^2.0.3"
   }
 }

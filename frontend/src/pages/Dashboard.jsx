@@ -1,0 +1,263 @@
+import { useState, useEffect } from 'react';
+import { Line, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+function Dashboard() {
+  const [urls, setUrls] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedUrl, setSelectedUrl] = useState(null);
+
+  useEffect(() => {
+    fetchUrls();
+  }, []);
+
+  const fetchUrls = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/api/urls');
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to fetch URLs');
+      }
+      
+      setUrls(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (url) => {
+    navigator.clipboard.writeText(url);
+  };
+
+  const getStatusBadge = (isActive, expiresAt) => {
+    if (!isActive) {
+      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Expired</span>;
+    }
+    if (expiresAt && new Date(expiresAt) < new Date()) {
+      return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Expiring Soon</span>;
+    }
+    return <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>;
+  };
+
+  const prepareClicksOverTimeData = (clicksOverTime) => {
+    const dates = Object.keys(clicksOverTime).sort();
+    return {
+      labels: dates,
+      datasets: [
+        {
+          label: 'Clicks',
+          data: dates.map(date => clicksOverTime[date]),
+          borderColor: 'rgb(99, 102, 241)',
+          backgroundColor: 'rgba(99, 102, 241, 0.5)',
+          tension: 0.1
+        }
+      ]
+    };
+  };
+
+  const prepareDeviceData = (deviceStats) => {
+    return {
+      labels: Object.keys(deviceStats),
+      datasets: [
+        {
+          label: 'Devices',
+          data: Object.values(deviceStats),
+          backgroundColor: [
+            'rgba(99, 102, 241, 0.5)',
+            'rgba(59, 130, 246, 0.5)',
+            'rgba(16, 185, 129, 0.5)'
+          ]
+        }
+      ]
+    };
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 text-red-700 rounded-md">
+        {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">URL Analytics Dashboard</h1>
+        <p className="text-gray-600 mt-2">Track and analyze your shortened URLs</p>
+      </div>
+
+      {urls.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <p className="text-gray-600">No URLs shortened yet</p>
+          <a
+            href="/"
+            className="mt-4 inline-block text-indigo-600 hover:text-indigo-700"
+          >
+            Create your first short URL
+          </a>
+        </div>
+      ) : (
+        <div className="space-y-8">
+          {/* URLs Table */}
+          <div className="bg-white shadow-sm rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Original URL
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Short URL
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Clicks
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {urls.map((url) => (
+                  <tr 
+                    key={url.id}
+                    className={`cursor-pointer hover:bg-gray-50 ${selectedUrl?.id === url.id ? 'bg-indigo-50' : ''}`}
+                    onClick={() => setSelectedUrl(url)}
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900 truncate max-w-xs">
+                        {url.originalUrl}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-indigo-600">{url.shortUrl}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{url.clicks}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {new Date(url.createdAt).toLocaleDateString()}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getStatusBadge(url.isActive, url.expiresAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyToClipboard(url.shortUrl);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Copy
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Analytics Section */}
+          {selectedUrl && (
+            <div className="bg-white shadow-sm rounded-lg p-6">
+              <h2 className="text-xl font-semibold mb-4">Analytics for {selectedUrl.shortUrl}</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Clicks Over Time Chart */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium mb-4">Clicks Over Time</h3>
+                  <Line 
+                    data={prepareClicksOverTimeData(selectedUrl.clicksOverTime)}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: 'top',
+                        },
+                      },
+                    }}
+                  />
+                </div>
+
+                {/* Device Distribution Chart */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-lg font-medium mb-4">Device Distribution</h3>
+                  <Bar 
+                    data={prepareDeviceData(selectedUrl.deviceStats)}
+                    options={{
+                      responsive: true,
+                      plugins: {
+                        legend: {
+                          position: 'top',
+                        },
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Browser Stats */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium mb-4">Browser Distribution</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {Object.entries(selectedUrl.browserStats).map(([browser, count]) => (
+                    <div key={browser} className="bg-gray-50 p-4 rounded-lg">
+                      <div className="text-sm text-gray-600">{browser}</div>
+                      <div className="text-2xl font-semibold">{count}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Dashboard; 

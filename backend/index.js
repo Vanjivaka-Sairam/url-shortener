@@ -2,13 +2,13 @@ import express from "express";
 import urlRoute from "./routes/url.js";
 import connectToMongoDB from "./connect.js";
 import URL from "./models/url.js";
-
-
+import cors from "cors";
 
 const app = express();
 const port = 3000;
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
@@ -17,10 +17,10 @@ connectToMongoDB("mongodb://localhost:27017/shorturl")
   .catch((err) => console.log("MongoDB connection error:", err));
 
 // Routes
-app.use("/url", urlRoute);
+app.use("/api", urlRoute);
 
 // Direct analytics route
-app.get("/analytics/:shortId", async (req, res) => {
+app.get("/api/analytics/:shortId", async (req, res) => {
   try {
     const shortId = req.params.shortId;
     const result = await URL.findOne({ shortID: shortId });
@@ -58,7 +58,6 @@ app.get("/:shortId", async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
-
 
 // Error handling middleware
 app.use((err, req, res, next) => {

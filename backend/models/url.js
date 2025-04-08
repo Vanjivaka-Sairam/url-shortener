@@ -1,10 +1,27 @@
 import mongoose from "mongoose";
 
+const visitSchema = new mongoose.Schema({
+  timestamp: { type: Date, default: Date.now },
+  deviceType: { type: String },
+  browser: { type: String },
+  ip: { type: String },
+  userAgent: { type: String },
+  country: { type: String },
+  city: { type: String }
+});
+
 const urlSchema = new mongoose.Schema({
   shortID: { type: String, required: true, unique: true },
-  redirectURL: { type: String, required: true},
-  visithistory: [{ timestamp: Number }],
+  redirectURL: { type: String, required: true },
+  visithistory: [visitSchema],
+  expiresAt: { type: Date },
+  isActive: { type: Boolean, default: true },
+  totalClicks: { type: Number, default: 0 }
 }, { timestamps: true });
+
+// Add index for faster queries
+urlSchema.index({ shortID: 1 });
+urlSchema.index({ expiresAt: 1 });
 
 const URL = mongoose.model("url", urlSchema);
 
