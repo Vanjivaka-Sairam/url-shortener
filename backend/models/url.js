@@ -20,8 +20,7 @@ const urlSchema = new mongoose.Schema({
   totalClicks: { type: Number, default: 0 }
 }, { timestamps: true });
 
-// Add index for faster queries
-urlSchema.index({ shortID: 1 });
+// Add indexes for faster queries
 urlSchema.index({ expiresAt: 1 });
 urlSchema.index({ userId: 1 });
 
