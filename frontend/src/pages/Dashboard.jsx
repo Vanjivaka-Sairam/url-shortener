@@ -300,24 +300,48 @@ function Dashboard() {
     setError('');
     setBulkActionLoading(true);
     try {
-      const results = await Promise.all(Array.from(selectedUrls).map(async urlId => {
+      const selectedUrlObjects = urls.filter(url => selectedUrls.has(url.id));
+      const urlsToProcess = selectedUrlObjects.filter(url => {
+        if (action === 'activate') return !url.isActive;
+        if (action === 'deactivate') return url.isActive;
+        return true; // for delete action
+      });
+
+      if (urlsToProcess.length === 0) {
+        setError(`No URLs need to be ${action}d`);
+        setBulkActionLoading(false);
+        return;
+      }
+
+      const results = await Promise.all(urlsToProcess.map(async url => {
         try {
-          const response = await fetch(`${API_URL}/api/url/${urlId}/toggle`, {
-            method: 'PATCH',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
+          let response;
+          if (action === 'delete') {
+            response = await fetch(`${API_URL}/api/url/${url.id}`, {
+              method: 'DELETE',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+          } else {
+            response = await fetch(`${API_URL}/api/url/${url.id}/toggle`, {
+              method: 'PATCH',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+          }
 
           if (!response.ok) {
             const data = await response.json();
-            throw new Error(data.error || `Failed to ${action} URL ${urlId}`);
+            throw new Error(data.error || `Failed to ${action} URL ${url.id}`);
           }
 
-          return { success: true, urlId };
+          return { success: true, urlId: url.id };
         } catch (error) {
-          return { success: false, urlId, error: error.message };
+          return { success: false, urlId: url.id, error: error.message };
         }
       }));
 
@@ -325,6 +349,10 @@ function Dashboard() {
       const failures = results.filter(result => !result.success);
       if (failures.length > 0) {
         setError(`Failed to process some URLs: ${failures.map(f => f.error).join(', ')}`);
+      } else {
+        // Show success message
+        const successCount = results.filter(r => r.success).length;
+        setError(`Successfully ${action}d ${successCount} URL${successCount !== 1 ? 's' : ''}`);
       }
 
       setSelectedUrls(new Set());
