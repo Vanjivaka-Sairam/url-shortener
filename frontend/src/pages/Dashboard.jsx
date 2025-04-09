@@ -74,7 +74,9 @@ function Dashboard() {
 
   const handleShowQR = (e, url) => {
     e.stopPropagation();
-    setQrUrl(url);
+    // Extract the short ID from the full URL
+    const shortId = url.split('/').pop();
+    setQrUrl(`${API_URL}/${shortId}`);
     setShowQRModal(true);
   };
 
@@ -163,8 +165,10 @@ function Dashboard() {
       const response = await fetch(`${API_URL}/api/url/${shortId}/toggle`, {
         method: 'PATCH',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isActive: !currentStatus })
       });
 
       if (!response.ok) {
@@ -172,17 +176,19 @@ function Dashboard() {
         throw new Error(data.error || `Failed to ${action} URL`);
       }
 
+      const updatedData = await response.json();
+
       // Update the URL status in state
       setUrls(urls.map(url => {
         if (url.id === shortId) {
-          return { ...url, isActive: !url.isActive };
+          return { ...url, isActive: updatedData.isActive };
         }
         return url;
       }));
 
       // Update selected URL if it's the one being toggled
       if (selectedUrl?.id === shortId) {
-        setSelectedUrl(prev => ({ ...prev, isActive: !prev.isActive }));
+        setSelectedUrl(prev => ({ ...prev, isActive: updatedData.isActive }));
       }
     } catch (err) {
       setError(err.message);

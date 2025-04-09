@@ -167,13 +167,19 @@ async function handleToggleUrlStatus(req, res) {
     try {
         const shortId = req.params.shortId;
         const userId = req.user.userId;
+        const { isActive } = req.body;
+        
+        if (typeof isActive !== 'boolean') {
+            return res.status(400).json({ error: "Invalid request body" });
+        }
+
         const url = await URL.findOne({ shortID: shortId, userId });
         
         if (!url) {
             return res.status(404).json({ error: "URL not found" });
         }
         
-        url.isActive = !url.isActive;
+        url.isActive = isActive;
         await url.save();
         
         return res.json({ 
