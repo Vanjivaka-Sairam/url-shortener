@@ -6,16 +6,24 @@ import URL from "./models/url.js";
 import cors from "cors";
 import { handleRedirect } from "./controller/url.js";
 import { initializeDefaultUser } from "./controller/auth.js";
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
 
 // Connect to MongoDB
-connectToMongoDB("mongodb://localhost:27017/shorturl")
+const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/shorturl";
+connectToMongoDB(mongoURI)
   .then(async () => {
     console.log("Connected to MongoDB");
     // Initialize default user

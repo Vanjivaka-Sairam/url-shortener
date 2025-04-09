@@ -12,5 +12,3 @@ router.delete("/url/:shortId", auth, handleDeleteUrl);
 router.patch("/url/:shortId/toggle", auth, handleToggleUrlStatus);
 
 export default router;
-
-
