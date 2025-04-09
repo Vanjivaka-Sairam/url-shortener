@@ -26,8 +26,10 @@ async function handleCreateShortUrl(req, res) {
             isActive: true
         });
 
+        const baseUrl = process.env.BASE_URL || 'https://url-shortener-production-10fe.up.railway.app';
+        
         return res.json({ 
-            shortUrl: `http://localhost:3000/${shortId}`,
+            shortUrl: `${baseUrl}/${shortId}`,
             originalUrl: body.url,
             expiresAt: url.expiresAt
         });
@@ -50,9 +52,11 @@ async function handleGetUrls(req, res) {
             totalClicks: 1
         }).sort({ createdAt: -1 });
 
+        const baseUrl = process.env.BASE_URL || 'https://url-shortener-production-10fe.up.railway.app';
+
         const formattedUrls = urls.map(url => ({
             id: url.shortID,
-            shortUrl: `http://localhost:3000/${url.shortID}`,
+            shortUrl: `${baseUrl}/${url.shortID}`,
             originalUrl: url.redirectURL,
             clicks: url.totalClicks,
             createdAt: url.createdAt,

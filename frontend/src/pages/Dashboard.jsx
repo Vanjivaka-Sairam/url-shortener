@@ -26,6 +26,8 @@ ChartJS.register(
   Legend
 );
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 function Dashboard() {
   const [urls, setUrls] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,7 +47,7 @@ function Dashboard() {
 
   const fetchUrls = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/urls', {
+      const response = await fetch(`${API_URL}/api/urls`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -126,7 +128,7 @@ function Dashboard() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/url/${shortId}`, {
+      const response = await fetch(`${API_URL}/api/url/${shortId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -157,7 +159,7 @@ function Dashboard() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/url/${shortId}/toggle`, {
+      const response = await fetch(`${API_URL}/api/url/${shortId}/toggle`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -298,7 +300,7 @@ function Dashboard() {
       const promises = Array.from(selectedUrls).map(urlId => {
         switch (action) {
           case 'delete':
-            return fetch(`http://localhost:3000/api/url/${urlId}`, {
+            return fetch(`${API_URL}/api/url/${urlId}`, {
               method: 'DELETE',
               headers: {
                 'Authorization': `Bearer ${token}`
@@ -306,7 +308,7 @@ function Dashboard() {
             });
           case 'activate':
           case 'deactivate':
-            return fetch(`http://localhost:3000/api/url/${urlId}/toggle`, {
+            return fetch(`${API_URL}/api/url/${urlId}/toggle`, {
               method: 'PATCH',
               headers: {
                 'Authorization': `Bearer ${token}`

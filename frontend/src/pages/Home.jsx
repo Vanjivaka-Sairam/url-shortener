@@ -8,6 +8,7 @@ function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { isAuthenticated, token } = useAuth();
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +22,7 @@ function Home() {
     }
     
     try {
-      const response = await fetch('http://localhost:3000/api/url', {
+      const response = await fetch(`${API_URL}/api/url`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
