@@ -75,6 +75,7 @@ function Dashboard() {
 
   const handleShowQR = (e, url) => {
     e.stopPropagation();
+    // Use the actual shortened URL directly
     setQrUrl(url);
     setShowQRModal(true);
   };
@@ -166,8 +167,7 @@ function Dashboard() {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ isActive: !currentStatus })
+        }
       });
 
       if (!response.ok) {
