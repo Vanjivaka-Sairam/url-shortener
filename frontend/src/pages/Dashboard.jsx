@@ -75,8 +75,9 @@ function Dashboard() {
 
   const handleShowQR = (e, url) => {
     e.stopPropagation();
-    // Use the actual shortened URL directly
-    setQrUrl(url);
+    // Extract the shortId from the URL and use it to create the QR code URL
+    const shortId = url.split('/').pop();
+    setQrUrl(`${API_URL}/${shortId}`);
     setShowQRModal(true);
   };
 
