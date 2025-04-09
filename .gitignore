@@ -1,1 +1,15 @@
 backend/node_modules
+frontend/node_modules
+frontend/.env
+backend/.env
+backend/logs
+backend/uploads
+backend/public/uploads
+backend/public/qrcode
+backend/public/images
+backend/public/favicon.ico
+backend/public/robots.txt
+backend/public/sitemap.xml
+backend/public/index.html
+backend/public/favicon.ico       
+
