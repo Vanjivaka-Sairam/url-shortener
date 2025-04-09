@@ -75,9 +75,7 @@ function Dashboard() {
 
   const handleShowQR = (e, url) => {
     e.stopPropagation();
-    // Extract the short ID from the full URL
-    const shortId = url.split('/').pop();
-    setQrUrl(`${FRONTEND_URL}/${shortId}`);
+    setQrUrl(url);
     setShowQRModal(true);
   };
 

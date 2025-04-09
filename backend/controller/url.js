@@ -42,15 +42,9 @@ async function handleCreateShortUrl(req, res) {
 async function handleGetUrls(req, res) {
     try {
         const userId = req.user.userId;
-        const urls = await URL.find({ userId }, { 
-            shortID: 1, 
-            redirectURL: 1, 
-            visithistory: 1,
-            createdAt: 1,
-            expiresAt: 1,
-            isActive: 1,
-            totalClicks: 1
-        }).sort({ createdAt: -1 });
+        const urls = await URL.find({ userId })
+            .select('shortID redirectURL visithistory createdAt expiresAt isActive totalClicks')
+            .sort({ createdAt: -1 });
 
         const baseUrl = process.env.BASE_URL || 'https://url-shortener-production-10fe.up.railway.app';
 
@@ -58,13 +52,13 @@ async function handleGetUrls(req, res) {
             id: url.shortID,
             shortUrl: `${baseUrl}/${url.shortID}`,
             originalUrl: url.redirectURL,
-            clicks: url.totalClicks,
+            clicks: url.totalClicks || 0,
             createdAt: url.createdAt,
             expiresAt: url.expiresAt,
             isActive: url.isActive,
-            deviceStats: getDeviceStats(url.visithistory),
-            browserStats: getBrowserStats(url.visithistory),
-            clicksOverTime: getClicksOverTime(url.visithistory)
+            deviceStats: getDeviceStats(url.visithistory || []),
+            browserStats: getBrowserStats(url.visithistory || []),
+            clicksOverTime: getClicksOverTime(url.visithistory || [])
         }));
 
         return res.json(formattedUrls);
@@ -168,18 +162,15 @@ async function handleToggleUrlStatus(req, res) {
         const shortId = req.params.shortId;
         const userId = req.user.userId;
         const { isActive } = req.body;
-        
-        if (typeof isActive !== 'boolean') {
-            return res.status(400).json({ error: "Invalid request body" });
-        }
 
         const url = await URL.findOne({ shortID: shortId, userId });
         
         if (!url) {
             return res.status(404).json({ error: "URL not found" });
         }
-        
-        url.isActive = isActive;
+
+        // Toggle the isActive status
+        url.isActive = !url.isActive;
         await url.save();
         
         return res.json({ 
