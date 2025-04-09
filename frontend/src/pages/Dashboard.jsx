@@ -75,10 +75,8 @@ function Dashboard() {
 
   const handleShowQR = (e, url) => {
     e.stopPropagation();
-    // Use the actual shortened URL from Railway
-    const baseUrl = 'https://url-shortener-production-10fe.up.railway.app';
-    const shortId = url.split('/').pop();
-    setQrUrl(`${baseUrl}/${shortId}`);
+    // Use the exact shortUrl from the backend without modification
+    setQrUrl(url);
     setShowQRModal(true);
   };
 
