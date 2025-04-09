@@ -1,21 +1,31 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 function Home() {
   const [url, setUrl] = useState('');
   const [shortUrl, setShortUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { isAuthenticated, token } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     
+    if (!isAuthenticated) {
+      setError('Please sign in to shorten URLs');
+      setLoading(false);
+      return;
+    }
+    
     try {
       const response = await fetch('http://localhost:3000/api/url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ url }),
       });
@@ -71,8 +81,25 @@ function Home() {
       </form>
 
       {error && (
-        <div className="mt-4 p-4 bg-red-50 text-red-700 rounded-md">
-          {error}
+        <div className="mt-4 p-4 bg-red-50 border-l-4 border-red-500">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">
+                {error}
+                {!isAuthenticated && (
+                  <span className="ml-1">
+                    Please <Link to="/login" className="font-medium underline hover:text-red-600">sign in</Link> or{' '}
+                    <Link to="/signup" className="font-medium underline hover:text-red-600">create an account</Link>.
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
         </div>
       )}
 

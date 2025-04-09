@@ -13,6 +13,7 @@ const visitSchema = new mongoose.Schema({
 const urlSchema = new mongoose.Schema({
   shortID: { type: String, required: true, unique: true },
   redirectURL: { type: String, required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'user', required: true },
   visithistory: [visitSchema],
   expiresAt: { type: Date },
   isActive: { type: Boolean, default: true },
@@ -22,6 +23,7 @@ const urlSchema = new mongoose.Schema({
 // Add index for faster queries
 urlSchema.index({ shortID: 1 });
 urlSchema.index({ expiresAt: 1 });
+urlSchema.index({ userId: 1 });
 
 const URL = mongoose.model("url", urlSchema);
 

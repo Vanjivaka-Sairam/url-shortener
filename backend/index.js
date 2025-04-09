@@ -1,9 +1,11 @@
 import express from "express";
 import urlRoute from "./routes/url.js";
+import authRoute from "./routes/auth.js";
 import connectToMongoDB from "./connect.js";
 import URL from "./models/url.js";
 import cors from "cors";
 import { handleRedirect } from "./controller/url.js";
+import { initializeDefaultUser } from "./controller/auth.js";
 
 const app = express();
 const port = 3000;
@@ -14,11 +16,16 @@ app.use(express.json());
 
 // Connect to MongoDB
 connectToMongoDB("mongodb://localhost:27017/shorturl")
-  .then(() => console.log("Connected to MongoDB"))
+  .then(async () => {
+    console.log("Connected to MongoDB");
+    // Initialize default user
+    await initializeDefaultUser();
+  })
   .catch((err) => console.log("MongoDB connection error:", err));
 
 // Routes
 app.use("/api", urlRoute);
+app.use("/api/auth", authRoute);
 
 // Direct analytics route
 app.get("/api/analytics/:shortId", async (req, res) => {

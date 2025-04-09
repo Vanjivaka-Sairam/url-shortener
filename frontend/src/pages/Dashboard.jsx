@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Line, Bar } from 'react-chartjs-2';
 import { QRCodeSVG } from 'qrcode.react';
+import { useAuth } from '../context/AuthContext';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -32,18 +33,24 @@ function Dashboard() {
   const [selectedUrl, setSelectedUrl] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrUrl, setQrUrl] = useState('');
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchUrls();
-  }, []);
+  }, [token]); // Re-fetch when token changes
 
   const fetchUrls = async () => {
     try {
-      const response = await fetch('http://localhost:3000/api/urls');
+      const response = await fetch('http://localhost:3000/api/urls', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       const data = await response.json();
       
       if (!response.ok) {
-        throw new Error(data.message || 'Failed to fetch URLs');
+        throw new Error(data.error || 'Failed to fetch URLs');
       }
       
       setUrls(data);
@@ -65,18 +72,46 @@ function Dashboard() {
   };
 
   const downloadQRCode = () => {
-    const canvas = document.getElementById('qr-code-canvas');
-    if (canvas) {
-      const pngUrl = canvas
-        .toDataURL('image/png')
-        .replace('image/png', 'image/octet-stream');
+    // Get the SVG element
+    const svg = document.getElementById('qr-code');
+    if (!svg) return;
+
+    // Create a canvas element
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Create an image element
+    const img = new Image();
+    
+    // Convert SVG to data URL
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const svgUrl = URL.createObjectURL(svgBlob);
+    
+    img.onload = () => {
+      // Set canvas size to match image
+      canvas.width = img.width;
+      canvas.height = img.height;
+      
+      // Draw image on canvas
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+      
+      // Convert to PNG and download
+      const pngUrl = canvas.toDataURL('image/png');
       const downloadLink = document.createElement('a');
       downloadLink.href = pngUrl;
       downloadLink.download = 'qr-code.png';
       document.body.appendChild(downloadLink);
       downloadLink.click();
       document.body.removeChild(downloadLink);
-    }
+      
+      // Clean up
+      URL.revokeObjectURL(svgUrl);
+    };
+    
+    img.src = svgUrl;
   };
 
   const handleDelete = async (e, shortId) => {
@@ -89,11 +124,14 @@ function Dashboard() {
     try {
       const response = await fetch(`http://localhost:3000/api/url/${shortId}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Failed to delete URL');
+        throw new Error(data.error || 'Failed to delete URL');
       }
 
       // Remove the deleted URL from state
@@ -117,11 +155,14 @@ function Dashboard() {
     try {
       const response = await fetch(`http://localhost:3000/api/url/${shortId}/toggle`, {
         method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || `Failed to ${action} URL`);
+        throw new Error(data.error || `Failed to ${action} URL`);
       }
 
       // Update the URL status in state
@@ -403,7 +444,7 @@ function Dashboard() {
                   <h3 className="text-lg font-medium mb-4">QR Code for Short URL</h3>
                   <div className="bg-white p-4 rounded-lg shadow-inner">
                     <QRCodeSVG
-                      id="qr-code-canvas"
+                      id="qr-code"
                       value={qrUrl}
                       size={256}
                       level="H"

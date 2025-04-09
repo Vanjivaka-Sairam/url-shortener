@@ -7,6 +7,7 @@ async function handleCreateShortUrl(req, res) {
     try {
         const shortId = shortid();
         const body = req.body;
+        const userId = req.user.userId;
 
         if(!body.url) {
             return res.status(400).json({ error: "URL is required" });
@@ -19,6 +20,7 @@ async function handleCreateShortUrl(req, res) {
         const url = await URL.create({
             shortID: shortId,
             redirectURL: body.url,
+            userId,
             visithistory: [],
             expiresAt,
             isActive: true
@@ -37,7 +39,8 @@ async function handleCreateShortUrl(req, res) {
 
 async function handleGetUrls(req, res) {
     try {
-        const urls = await URL.find({}, { 
+        const userId = req.user.userId;
+        const urls = await URL.find({ userId }, { 
             shortID: 1, 
             redirectURL: 1, 
             visithistory: 1,
@@ -70,7 +73,8 @@ async function handleGetUrls(req, res) {
 async function handleGetAnalytics(req, res) {
     try {
         const shortId = req.params.shortId;
-        const result = await URL.findOne({ shortID: shortId });
+        const userId = req.user.userId;
+        const result = await URL.findOne({ shortID: shortId, userId });
         
         if (!result) {
             return res.status(404).json({ error: "URL not found" });
@@ -141,7 +145,8 @@ async function handleRedirect(req, res) {
 async function handleDeleteUrl(req, res) {
     try {
         const shortId = req.params.shortId;
-        const result = await URL.findOneAndDelete({ shortID: shortId });
+        const userId = req.user.userId;
+        const result = await URL.findOneAndDelete({ shortID: shortId, userId });
         
         if (!result) {
             return res.status(404).json({ error: "URL not found" });
@@ -157,20 +162,19 @@ async function handleDeleteUrl(req, res) {
 async function handleToggleUrlStatus(req, res) {
     try {
         const shortId = req.params.shortId;
-        const url = await URL.findOne({ shortID: shortId });
+        const userId = req.user.userId;
+        const url = await URL.findOne({ shortID: shortId, userId });
         
         if (!url) {
             return res.status(404).json({ error: "URL not found" });
         }
         
-        // Toggle the isActive status
         url.isActive = !url.isActive;
         await url.save();
         
         return res.json({ 
-            id: url.shortID,
-            isActive: url.isActive,
-            message: `URL ${url.isActive ? 'activated' : 'deactivated'} successfully` 
+            message: `URL ${url.isActive ? 'activated' : 'deactivated'} successfully`,
+            isActive: url.isActive
         });
     } catch (error) {
         console.error("Error toggling URL status:", error);
