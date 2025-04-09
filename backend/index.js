@@ -16,16 +16,25 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'https://url-shortener-lime-seven.vercel.app',
-    'https://url-shortener-frontend-nine.vercel.app'
-  ],
+  origin: '*',  // Allow all origins for debugging
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept']
 }));
 app.use(express.json());
+
+// Root route for API health check
+app.get('/', (req, res) => {
+  res.json({
+    message: 'URL Shortener API is running',
+    status: 'ok',
+    endpoints: {
+      auth: '/api/auth',
+      urls: '/api',
+      redirect: '/:shortId'
+    }
+  });
+});
 
 // Connect to MongoDB
 const mongoURI = process.env.MONGODB_URI || "mongodb://localhost:27017/shorturl";
