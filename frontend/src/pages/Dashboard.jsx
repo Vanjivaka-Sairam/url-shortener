@@ -27,6 +27,7 @@ ChartJS.register(
 );
 
 const API_URL = import.meta.env.VITE_API_URL;
+const FRONTEND_URL = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
 
 function Dashboard() {
   const [urls, setUrls] = useState([]);
@@ -76,7 +77,7 @@ function Dashboard() {
     e.stopPropagation();
     // Extract the short ID from the full URL
     const shortId = url.split('/').pop();
-    setQrUrl(`${API_URL}/${shortId}`);
+    setQrUrl(`${FRONTEND_URL}/${shortId}`);
     setShowQRModal(true);
   };
 
