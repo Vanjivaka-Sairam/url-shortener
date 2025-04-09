@@ -39,6 +39,7 @@ function Dashboard() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [selectedUrls, setSelectedUrls] = useState(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const { token } = useAuth();
 
   useEffect(() => {
@@ -296,34 +297,42 @@ function Dashboard() {
       return;
     }
 
+    setError('');
+    setBulkActionLoading(true);
     try {
-      const promises = Array.from(selectedUrls).map(urlId => {
-        switch (action) {
-          case 'delete':
-            return fetch(`${API_URL}/api/url/${urlId}`, {
-              method: 'DELETE',
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-          case 'activate':
-          case 'deactivate':
-            return fetch(`${API_URL}/api/url/${urlId}/toggle`, {
-              method: 'PATCH',
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
-            });
-          default:
-            return Promise.resolve();
-        }
-      });
+      const results = await Promise.all(Array.from(selectedUrls).map(async urlId => {
+        try {
+          const response = await fetch(`${API_URL}/api/url/${urlId}/toggle`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
-      await Promise.all(promises);
+          if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.error || `Failed to ${action} URL ${urlId}`);
+          }
+
+          return { success: true, urlId };
+        } catch (error) {
+          return { success: false, urlId, error: error.message };
+        }
+      }));
+
+      // Check for any failures
+      const failures = results.filter(result => !result.success);
+      if (failures.length > 0) {
+        setError(`Failed to process some URLs: ${failures.map(f => f.error).join(', ')}`);
+      }
+
       setSelectedUrls(new Set());
-      fetchUrls(); // Refresh the URL list
+      await fetchUrls(); // Refresh the URL list
     } catch (err) {
-      setError(err.message);
+      setError(`Operation failed: ${err.message}`);
+    } finally {
+      setBulkActionLoading(false);
     }
   };
 
@@ -472,21 +481,24 @@ function Dashboard() {
                   <div className="flex flex-wrap gap-2">
                     <button
                       onClick={() => handleBulkAction('activate')}
-                      className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                      disabled={bulkActionLoading}
+                      className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm disabled:opacity-50"
                     >
-                      Activate Selected
+                      {bulkActionLoading ? 'Processing...' : 'Activate Selected'}
                     </button>
                     <button
                       onClick={() => handleBulkAction('deactivate')}
-                      className="px-3 sm:px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm"
+                      disabled={bulkActionLoading}
+                      className="px-3 sm:px-4 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 text-sm disabled:opacity-50"
                     >
-                      Deactivate Selected
+                      {bulkActionLoading ? 'Processing...' : 'Deactivate Selected'}
                     </button>
                     <button
                       onClick={() => handleBulkAction('delete')}
-                      className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm"
+                      disabled={bulkActionLoading}
+                      className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm disabled:opacity-50"
                     >
-                      Delete Selected
+                      {bulkActionLoading ? 'Processing...' : 'Delete Selected'}
                     </button>
                   </div>
                 </div>
