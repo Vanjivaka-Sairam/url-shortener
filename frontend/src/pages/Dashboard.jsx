@@ -75,9 +75,10 @@ function Dashboard() {
 
   const handleShowQR = (e, url) => {
     e.stopPropagation();
-    // Extract the shortId from the URL and use it to create the QR code URL
+    // Use the actual shortened URL from Railway
+    const baseUrl = 'https://url-shortener-production-10fe.up.railway.app';
     const shortId = url.split('/').pop();
-    setQrUrl(`${API_URL}/${shortId}`);
+    setQrUrl(`${baseUrl}/${shortId}`);
     setShowQRModal(true);
   };
 
